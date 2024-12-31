@@ -9,12 +9,16 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { PenLine, Plus, Save, FolderOpen } from 'lucide-react'
 import { useToast } from "@/app/components/ui/use-toast"
+import { useTheme } from 'next-themes'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/app/components/ui/dialog"
 
 export default function TaskManager() {
   const {
     tasks,
     updateTask,
+    deleteTask,
+    viewMode,
+    setViewMode,
     reorderTasks,
     projectName,
     setProjectName,
@@ -178,24 +182,22 @@ export default function TaskManager() {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex flex-col h-full">
-        <div className="flex flex-col mb-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {isEditingProjectName ? (
-                <Input
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  onBlur={handleProjectNameSave}
-                  onKeyDown={handleProjectNameKeyDown}
-                  className="text-2xl font-bold"
-                />
-              ) : (
-                <h1 className="text-2xl font-bold">{projectName}</h1>
-              )}
-              <Button variant="ghost" size="icon" onClick={handleProjectNameEdit}>
-                <PenLine className="h-4 w-4" />
-              </Button>
-            </div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 space-y-4 md:space-y-0">
+          <div className="flex items-center gap-2">
+            {isEditingProjectName ? (
+              <Input
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                onBlur={handleProjectNameSave}
+                onKeyDown={handleProjectNameKeyDown}
+                className="text-2xl font-bold"
+              />
+            ) : (
+              <h1 className="text-2xl font-bold">{projectName}</h1>
+            )}
+            <Button variant="ghost" size="icon" onClick={handleProjectNameEdit}>
+              <PenLine className="h-4 w-4" />
+            </Button>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleNewProject}>

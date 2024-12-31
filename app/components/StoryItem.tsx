@@ -135,6 +135,7 @@ export default function StoryItem({ story, viewMode, isSingleView = false }: Sto
                 <Link 
                   href={url} 
                   className="text-gray-900 hover:text-orange-500 dark:text-zinc-100 dark:hover:text-orange-400"
+                  target="_blank"
                 >
                   {title}
                 </Link>
@@ -144,6 +145,7 @@ export default function StoryItem({ story, viewMode, isSingleView = false }: Sto
                   <Link 
                     href={url} 
                     className="text-xs text-gray-500 hover:text-orange-500 dark:text-zinc-400 dark:hover:text-orange-400 flex items-center gap-1"
+                    target="_blank"
                   >
                     <ExternalLink className="w-3 h-3" />
                     <span className="truncate">{domain}</span>

@@ -80,3 +80,14 @@
   }
 }
 
+
+[role="status"][data-state="open"] {
+  z-index: 9999 !important;
+}
+
+.toast-viewport {
+  position: fixed !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  z-index: 9999 !important;
+}

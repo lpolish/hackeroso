@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google'
 import ThemeInitializer from './components/ThemeInitializer'
 import { TaskProvider } from './contexts/TaskContext'
 import { Analytics } from '@vercel/analytics/react'
-import { Toaster } from "@/app/components/ui/toaster"
+import { Toaster } from "./components/ui/toaster"  // Cambiado de @/components a ruta relativa
 
 const inter = Inter({
   subsets: ['latin'],

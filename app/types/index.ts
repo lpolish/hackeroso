@@ -13,7 +13,7 @@ export interface Task {
   isPaused?: boolean
   accumulatedTime: number
   lastPausedAt?: string
-  notificationsEnabled: boolean;
+  notificationsEnabled: boolean
 }
 
 export interface LogoSettings {

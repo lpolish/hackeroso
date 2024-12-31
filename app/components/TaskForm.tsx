@@ -75,8 +75,8 @@ export default function TaskForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="relative">
+    <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4">
+      <div className="flex-grow">
         <Input
           type="text"
           placeholder="Add a new task or paste a link..."
@@ -86,7 +86,7 @@ export default function TaskForm() {
           className="w-full bg-background/50 border-muted text-base"
         />
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap md:flex-nowrap gap-2">
         <div ref={priorityDropdownRef} className="relative">
           <Button
             type="button"
@@ -151,7 +151,7 @@ export default function TaskForm() {
           />
           <span className="text-base text-muted-foreground">min</span>
         </div>
-        <Button type="submit" className="ml-auto text-base">Add Task</Button>
+        <Button type="submit" className="md:ml-auto text-base">Add Task</Button>
       </div>
     </form>
   )

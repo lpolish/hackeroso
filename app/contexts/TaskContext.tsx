@@ -1,7 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { Task, LogoSettings } from '@/app/types'
+import { Task, LogoSettings } from '../types'
+import { useToast } from "../components/ui/use-toast"
 
 interface TaskContextType {
   tasks: Task[]
@@ -55,6 +56,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [customColumns, setCustomColumns] = useState<string[]>([])
   const [projectName, setProjectName] = useState('Tasks')
   const [pendingTasksCount, setPendingTasksCount] = useState(0)
+  const { toast } = useToast()
 
   useEffect(() => {
     const savedState = localStorage.getItem('taskAIState')
@@ -101,48 +103,67 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       notificationsEnabled: false,
     }
     setTasks(prevTasks => [newTask, ...prevTasks])
+    toast({
+      title: "Task Added",
+      description: `New task "${newTask.title}" has been added.`,
+    })
   }
 
   const updateTask = (updatedTask: Partial<Task> & { id: string }) => {
     setTasks(prevTasks => prevTasks.map(task => {
       if (task.id === updatedTask.id) {
-        const newTask = { ...task, ...updatedTask }
+        const newTask = { ...task, ...updatedTask };
+
+        // Notification toggle toast
+        if (newTask.notificationsEnabled !== task.notificationsEnabled) {
+          toast({
+            title: newTask.notificationsEnabled ? "Notifications Enabled" : "Notifications Disabled",
+            description: `Notifications for task "${task.title}" have been ${newTask.notificationsEnabled ? 'enabled' : 'disabled'}.`,
+          });
+        }
+
+        // Don't update time for completed tasks
+        if (task.status === 'completed') {
+          return { ...newTask, accumulatedTime: task.accumulatedTime };
+        }
 
         // Handle task starting
         if (newTask.status === 'running' && !task.startedAt && !newTask.isPaused) {
-          newTask.startedAt = new Date().toISOString()
-          newTask.lastPausedAt = undefined
+          newTask.startedAt = new Date().toISOString();
+          newTask.lastPausedAt = undefined;
         }
 
         // Handle task pausing
         if (newTask.isPaused && !task.isPaused && task.startedAt) {
-          const now = new Date()
-          const startTime = new Date(task.startedAt)
-          const additionalTime = now.getTime() - startTime.getTime()
-          newTask.accumulatedTime = (task.accumulatedTime || 0) + additionalTime
-          newTask.lastPausedAt = now.toISOString()
+          const now = new Date();
+          const startTime = new Date(task.startedAt);
+          const additionalTime = now.getTime() - startTime.getTime();
+          newTask.accumulatedTime = (task.accumulatedTime || 0) + additionalTime;
+          newTask.lastPausedAt = now.toISOString();
         }
 
         // Handle task resuming
         if (!newTask.isPaused && task.isPaused) {
-          newTask.startedAt = new Date().toISOString()
-          newTask.lastPausedAt = undefined
+          newTask.startedAt = new Date().toISOString();
+          newTask.lastPausedAt = undefined;
         }
 
         // Handle task completion
-        if (newTask.status === 'completed' && task.status !== 'completed') {
-          newTask.completedAt = new Date().toISOString()
+        const isCompleted = (newTask.status === 'completed');
+        const wasNotCompleted = (task.status === 'pending' || task.status === 'running');
+        if (isCompleted && wasNotCompleted) {
+          newTask.completedAt = new Date().toISOString();
           if (task.status === 'running' && task.startedAt && !task.isPaused) {
-            const now = new Date()
-            const startTime = new Date(task.startedAt)
-            newTask.accumulatedTime = (task.accumulatedTime || 0) + (now.getTime() - startTime.getTime())
+            const now = new Date();
+            const startTime = new Date(task.startedAt);
+            newTask.accumulatedTime = (task.accumulatedTime || 0) + (now.getTime() - startTime.getTime());
           }
         }
 
-        return newTask
+        return newTask;
       }
-      return task
-    }))
+      return task;
+    }));
   }
 
   const deleteTask = (id: string) => {
@@ -180,7 +201,11 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (Notification.permission === "granted") {
       new Notification(title, { body });
     }
-  };
+    toast({
+      title: title,
+      description: body,
+    })
+  }
 
   const clearTasks = () => {
     setTasks([]);
