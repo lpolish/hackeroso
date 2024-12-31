@@ -18,17 +18,32 @@ export default function Footer() {
             <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Resources</h3>
             <ul className="mt-4 space-y-2">
               <li>
-                <a href="https://github.com/HackerNews/API" className="text-sm text-muted-foreground hover:text-primary">
+                <Link href="/tasks" className="text-sm text-muted-foreground hover:text-primary">
+                  Offline Privacy-Enhanced Task Management
+                </Link>
+              </li>
+              <li>
+                <a href="https://github.com/HackerNews/API" className="text-sm text-muted-foreground hover:text-primary" target="_blank">
                   Hacker News API
                 </a>
               </li>
               <li>
-                <a href="https://nextjs.org/" className="text-sm text-muted-foreground hover:text-primary">
+                <a href="https://tetris.hackeroso.com/" className="text-sm text-muted-foreground hover:text-primary" target="_blank">
+                  Tetris Clone (warn: addicting)
+                </a>
+              </li>
+              <li>
+                <Link href="https://ycombinator.com/" className="text-sm text-muted-foreground hover:text-primary" target="_blank">
+                  Y Combinator
+                </Link>
+              </li>
+              <li>
+                <a href="https://nextjs.org/" className="text-sm text-muted-foreground hover:text-primary" target="_blank">
                   Next.js
                 </a>
               </li>
               <li>
-                <a href="https://vercel.com/" className="text-sm text-muted-foreground hover:text-primary">
+                <a href="https://vercel.com/" className="text-sm text-muted-foreground hover:text-primary" target="_blank">
                   Vercel
                 </a>
               </li>
@@ -38,13 +53,13 @@ export default function Footer() {
             <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Connect</h3>
             <ul className="mt-4 space-y-2">
               <li>
-                <a href="https://github.com/lpolish/hackeroso" className="text-sm text-muted-foreground hover:text-primary flex items-center">
+                <a href="https://github.com/lpolish/hackeroso" className="text-sm text-muted-foreground hover:text-primary flex items-center" target="_blank">
                   <Github className="w-4 h-4 mr-2" />
                   GitHub
                 </a>
               </li>
               <li>
-                <a href="https://twitter.com/pulidoman" className="text-sm text-muted-foreground hover:text-primary flex items-center">
+                <a href="https://twitter.com/pulidoman" className="text-sm text-muted-foreground hover:text-primary flex items-center" target="_blank">
                   <Twitter className="w-4 h-4 mr-2" />
                   X
                 </a>
