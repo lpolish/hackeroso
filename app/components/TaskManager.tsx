@@ -10,18 +10,17 @@ import { Input } from "./ui/input"
 import { PenLine, Plus, Save, FolderOpen } from 'lucide-react'
 import { useToast } from "@/app/components/ui/use-toast"
 import { useTheme } from 'next-themes'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/app/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from "@/app/components/ui/dialog"
 
 export default function TaskManager() {
   const {
     tasks,
     updateTask,
-    deleteTask,
-    viewMode,
-    setViewMode,
     reorderTasks,
     projectName,
     setProjectName,
+    clearTasks,
+    setTasks,
   } =useTaskContext()
   const [isMobile, setIsMobile] = useState(false)
   const [isEditingProjectName, setIsEditingProjectName] = useState(false)
@@ -57,16 +56,13 @@ export default function TaskManager() {
   const onDragEnd = (result: DropResult) => {
     const { source, destination } = result
 
-    // Dropped outside the list
     if (!destination) {
       return
     }
 
-    // Reorder within the same list
     if (source.droppableId === destination.droppableId) {
       reorderTasks(source.droppableId as 'pending' | 'running' | 'completed', source.index, destination.index)
     } else {
-      // Move to a different list
       const newStatus = destination.droppableId as 'pending' | 'running' | 'completed'
       const taskId = result.draggableId
       const task = tasks.find(t => t.id === taskId)
@@ -128,17 +124,16 @@ export default function TaskManager() {
           if (typeof content === 'string') {
             const importedData = JSON.parse(content)
             setProjectName(importedData.name)
-            // Here you would also update the tasks in your context
-            // This depends on how your context is set up to handle bulk updates
+            setTasks(importedData.tasks)
             toast({
-              title: "Project imported",
-              description: "Your project has been successfully imported.",
+              title: "Project Imported",
+              description: `Project "${importedData.name}" has been successfully imported with ${importedData.tasks.length} tasks.`,
             })
           }
         } catch (error) {
           console.error('Error parsing imported file:', error)
           toast({
-            title: "Import failed",
+            title: "Import Failed",
             description: "There was an error importing your project. Please check the file and try again.",
             variant: "destructive",
           })
@@ -153,9 +148,7 @@ export default function TaskManager() {
       setConfirmAction('new')
       setIsConfirmDialogOpen(true)
     } else {
-      // If no tasks, just create a new project without confirmation
-      setProjectName('New Project')
-      // Clear tasks (you'll need to implement this in your context)
+      createNewProject()
     }
   }
 
@@ -164,19 +157,26 @@ export default function TaskManager() {
       setConfirmAction('load')
       setIsConfirmDialogOpen(true)
     } else {
-      // If no tasks, just trigger file input without confirmation
       document.getElementById('file-input')?.click()
     }
   }
 
   const handleConfirmAction = () => {
     if (confirmAction === 'new') {
-      setProjectName('New Project')
-      // Clear tasks (you'll need to implement this in your context)
+      createNewProject()
     } else if (confirmAction === 'load') {
       document.getElementById('file-input')?.click()
     }
     setIsConfirmDialogOpen(false)
+  }
+
+  const createNewProject = () => {
+    setProjectName('New Project')
+    clearTasks()
+    toast({
+      title: "New Project Created",
+      description: "A new project has been started with an empty task list.",
+    })
   }
 
   return (
@@ -340,4 +340,3 @@ export default function TaskManager() {
     </DragDropContext>
   )
 }
-
