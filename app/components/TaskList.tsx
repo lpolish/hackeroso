@@ -1,6 +1,6 @@
 'use client'
 
-import { Task } from '../contexts/TaskContext'
+import { Task } from '@/app/types'
 import TaskItem from './TaskItem'
 
 interface TaskListProps {

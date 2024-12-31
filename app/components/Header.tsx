@@ -112,8 +112,8 @@ export default function Header() {
 
   return (
     <>
-      <header className={`font-mono bg-background/80 backdrop-blur-md border-b border-border shadow-md fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'md:h-12' : 'md:h-16'}`}>
-        <div className={`px-4 h-full flex items-center transition-all duration-300 ${isScrolled ? 'md:py-1' : 'md:py-3'}`}>
+      <header className={`font-mono bg-background border-b border-border shadow-md fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? 'md:h-12' : 'md:h-16'}`}>
+        <div className={`px-4 h-full flex items-center transition-all duration-300 ${isScrolled ? 'py-1.5 md:py-1' : 'py-3 md:py-3'}`}>
           <div className="flex items-center justify-between gap-4 w-full">
             <div className="group relative">
               <Link href="/" className={`text-xl font-bold tracking-tighter shrink-0 transition-all duration-300 bg-gradient-to-r from-green-400 to-green-300 bg-clip-text text-transparent ${isScrolled ? 'md:text-lg' : ''}`}>
@@ -186,7 +186,7 @@ export default function Header() {
               </button>
 
               <button
-                className="md:hidden p-2 relative"
+                className="md:hidden p-2 relative z-50 bg-background"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="open menu"
               >

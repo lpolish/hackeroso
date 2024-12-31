@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import ThemeInitializer from './components/ThemeInitializer'
 import { TaskProvider } from './contexts/TaskContext'
 import { Analytics } from '@vercel/analytics/react'
+import { Toaster } from "@/app/components/ui/toaster"
 
 const inter = Inter({
   subsets: ['latin'],
@@ -66,6 +67,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable}`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+      </head>
       <body className={`${inter.className} pt-safe`}>
         <script dangerouslySetInnerHTML={{
           __html: `
@@ -94,6 +98,7 @@ export default function RootLayout({
         <TaskProvider>
           {children}
         </TaskProvider>
+        <Toaster />
         <Analytics />
       </body>
     </html>

@@ -1,22 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Task, useTaskContext } from '../contexts/TaskContext'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTaskContext } from '../contexts/TaskContext'
 import { Button } from "@/app/components/ui/button"
 import { Card } from "@/app/components/ui/card"
-import { Bell, Play, Pause, CheckCircle, Trash2, Timer, HourglassIcon, Flag, GripVertical, ExternalLink } from 'lucide-react'
+import { Bell, BellOff, Play, Pause, CheckCircle, Trash2, Timer, HourglassIcon, Flag, GripVertical, ExternalLink, ChevronDown } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Draggable } from 'react-beautiful-dnd'
 import { Input } from "@/app/components/ui/input"
-import { Badge } from "@/app/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/app/components/ui/tooltip"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/app/components/ui/dropdown-menu"
-
+import { useToast } from "@/app/components/ui/use-toast"
+import { Task } from "@/app/types"
 interface TaskItemProps {
   task: Task
   index: number
@@ -28,7 +22,37 @@ export default function TaskItem({ task, index }: TaskItemProps) {
   const [isEditingDuration, setIsEditingDuration] = useState(false)
   const [editedDuration, setEditedDuration] = useState(task.expectedDuration.toString())
   const [isReverseTimer, setIsReverseTimer] = useState(false)
+  const [isBlinking, setIsBlinking] = useState(false)
+  const [isPriorityDropdownOpen, setIsPriorityDropdownOpen] = useState(false)
   const durationInputRef = useRef<HTMLInputElement>(null)
+  const priorityDropdownRef = useRef<HTMLDivElement>(null)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const { toast } = useToast()
+
+  const formatTime = (seconds: number) => {
+    const totalMinutes = Math.floor(seconds / 60)
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    const remainingSeconds = seconds % 60
+    return `${hours > 0 ? `${hours}:` : ''}${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
+  }
+
+  const handleComplete = useCallback(() => {
+    const now = new Date().getTime()
+    const startTime = new Date(task.startedAt!).getTime()
+    const finalTime = now - startTime + (task.accumulatedTime || 0)
+    updateTask({
+      id: task.id,
+      status: 'completed',
+      accumulatedTime: finalTime,
+    })
+    setIsBlinking(false)
+    stopTabTitleBlink()
+    toast({
+      title: "Task Completed",
+      description: `Your task "${task.title}" has been completed!`,
+    })
+  }, [task.id, task.startedAt, task.accumulatedTime, task.title, updateTask, toast])
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -41,16 +65,24 @@ export default function TaskItem({ task, index }: TaskItemProps) {
 
         if (currentTime >= task.expectedDuration * 60 * 1000) {
           clearInterval(interval)
+          setIsBlinking(true)
+          handleComplete()
           if (task.notificationsEnabled) {
             sendNotification("Task Completed", `Your task "${task.title}" has been completed!`)
+            startTabTitleBlink(`Task Completed: ${task.title}`)
           }
         }
       }, 1000)
-    } else if (task.isPaused) {
+      timerRef.current = interval
+    } else if (task.isPaused || task.status === 'completed') {
       setElapsedTime(Math.floor(task.accumulatedTime / 1000))
     }
-    return () => clearInterval(interval)
-  }, [task.status, task.startedAt, task.isPaused, task.accumulatedTime, task.expectedDuration, task.notificationsEnabled, task.title, sendNotification])
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
+  }, [task.status, task.startedAt, task.isPaused, task.accumulatedTime, task.expectedDuration, task.notificationsEnabled, task.title, sendNotification, handleComplete])
 
   useEffect(() => {
     if (isEditingDuration && durationInputRef.current) {
@@ -59,19 +91,52 @@ export default function TaskItem({ task, index }: TaskItemProps) {
     }
   }, [isEditingDuration])
 
-  const formatTime = (seconds: number) => {
-    const totalMinutes = Math.floor(seconds / 60)
-    const hours = Math.floor(totalMinutes / 60)
-    const minutes = totalMinutes % 60
-    const remainingSeconds = seconds % 60
-    return `${hours > 0 ? `${hours}:` : ''}${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
-  }
+  useEffect(() => {
+    let blinkInterval: NodeJS.Timeout
+    if (isBlinking) {
+      blinkInterval = setInterval(() => {
+        setIsBlinking((prev) => !prev)
+      }, 500)
+    }
+    return () => clearInterval(blinkInterval)
+  }, [isBlinking])
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        stopTabTitleBlink()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (priorityDropdownRef.current && !priorityDropdownRef.current.contains(event.target as Node)) {
+        setIsPriorityDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const handleStart = () => {
     updateTask({
       id: task.id,
       status: 'running',
       isPaused: false,
+    })
+    setIsBlinking(false)
+    stopTabTitleBlink()
+    toast({
+      title: "Task Started",
+      description: `Task "${task.title}" has been started.`,
     })
   }
 
@@ -81,26 +146,33 @@ export default function TaskItem({ task, index }: TaskItemProps) {
       status: 'running',
       isPaused: true,
     })
-  }
-
-  const handleComplete = () => {
-    updateTask({
-      id: task.id,
-      status: 'completed',
+    toast({
+      title: "Task Paused",
+      description: `Task "${task.title}" has been paused.`,
     })
   }
 
   const handleNotificationToggle = async () => {
+    if (task.status === 'completed') return;
     if (!task.notificationsEnabled) {
       const permissionGranted = await requestNotificationPermission()
       if (!permissionGranted) {
         console.log("Notification permission denied")
+        toast({
+          title: "Notification Permission Denied",
+          description: "Please enable notifications in your browser settings.",
+          variant: "destructive",
+        })
         return
       }
     }
     updateTask({
       id: task.id,
       notificationsEnabled: !task.notificationsEnabled,
+    })
+    toast({
+      title: task.notificationsEnabled ? "Notifications Disabled" : "Notifications Enabled",
+      description: `Notifications for task "${task.title}" have been ${task.notificationsEnabled ? 'disabled' : 'enabled'}.`,
     })
   }
 
@@ -120,6 +192,10 @@ export default function TaskItem({ task, index }: TaskItemProps) {
       updateTask({
         id: task.id,
         expectedDuration: newDuration,
+      })
+      toast({
+        title: "Duration Updated",
+        description: `Task duration updated to ${newDuration} minutes.`,
       })
     } else {
       setEditedDuration(task.expectedDuration.toString())
@@ -163,6 +239,30 @@ export default function TaskItem({ task, index }: TaskItemProps) {
       id: task.id,
       priority: newPriority,
     })
+    toast({
+      title: "Priority Updated",
+      description: `Task priority updated to ${newPriority}.`,
+    })
+    setIsPriorityDropdownOpen(false)
+  }
+
+  const startTabTitleBlink = (message: string) => {
+    let isOriginal = false
+    const originalTitle = document.title
+    const interval = setInterval(() => {
+      document.title = isOriginal ? originalTitle : message
+      isOriginal = !isOriginal
+    }, 1000);
+
+    // Store the interval ID on the window object
+    (window as any).tabTitleBlinkInterval = interval
+  }
+
+  const stopTabTitleBlink = () => {
+    if ((window as any).tabTitleBlinkInterval) {
+      clearInterval((window as any).tabTitleBlinkInterval)
+      document.title = 'Hackeroso' // Reset to original title
+    }
   }
 
   return (
@@ -172,7 +272,7 @@ export default function TaskItem({ task, index }: TaskItemProps) {
           ref={provided.innerRef}
           {...provided.draggableProps}
         >
-          <Card className={`p-4 relative ${task.status === 'running' ? 'border-blue-500' : ''}`}>
+          <Card className={`p-4 relative ${task.status === 'running' ? 'border-blue-500' : ''} ${isBlinking ? 'animate-pulse' : ''}`}>
             <div className="flex flex-col gap-2">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -215,31 +315,48 @@ export default function TaskItem({ task, index }: TaskItemProps) {
                     <span>Added {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
                   </div>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Flag className={`h-4 w-4 stroke-2 ${
-                        task.priority === 'low' ? 'stroke-green-500' :
-                        task.priority === 'medium' ? 'stroke-yellow-500' :
-                        'stroke-red-500'
-                      }`} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handlePriorityChange('low')}>
-                      <Flag className="h-4 w-4 mr-2 stroke-green-500 stroke-2" />
-                      Low
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handlePriorityChange('medium')}>
-                      <Flag className="h-4 w-4 mr-2 stroke-yellow-500 stroke-2" />
-                      Medium
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handlePriorityChange('high')}>
-                      <Flag className="h-4 w-4 mr-2 stroke-red-500 stroke-2" />
-                      High
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div ref={priorityDropdownRef} className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsPriorityDropdownOpen(!isPriorityDropdownOpen)}
+                    className="flex items-center gap-1"
+                  >
+                    <Flag className={`h-4 w-4 stroke-2 ${
+                      task.priority === 'low' ? 'stroke-green-500' :
+                      task.priority === 'medium' ? 'stroke-yellow-500' :
+                      'stroke-red-500'
+                    }`} />
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                  {isPriorityDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10">
+                      <div className="py-1">
+                        <button
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full"
+                          onClick={() => handlePriorityChange('low')}
+                        >
+                          <Flag className="h-4 w-4 mr-2 stroke-green-500 stroke-2" />
+                          Low
+                        </button>
+                        <button
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full"
+                          onClick={() => handlePriorityChange('medium')}
+                        >
+                          <Flag className="h-4 w-4 mr-2 stroke-yellow-500 stroke-2" />
+                          Medium
+                        </button>
+                        <button
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full"
+                          onClick={() => handlePriorityChange('high')}
+                        >
+                          <Flag className="h-4 w-4 mr-2 stroke-red-500 stroke-2" />
+                          High
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {task.status === 'running' && (
@@ -254,33 +371,46 @@ export default function TaskItem({ task, index }: TaskItemProps) {
               )}
 
               <div className="flex items-center gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleNotificationToggle}
-                        className={task.notificationsEnabled ? "text-green-500" : "text-gray-400"}
-                      >
-                        <Bell className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{task.notificationsEnabled ? "Disable notifications" : "Enable notifications"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                {task.status === 'running' && !task.isPaused ? (
-                  <Button variant="ghost" size="icon" onClick={handlePause}>
-                    <Pause className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button variant="ghost" size="icon" onClick={handleStart}>
-                    <Play className="h-4 w-4" />
-                  </Button>
+                {task.status !== 'completed' && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleNotificationToggle}
+                          className={task.notificationsEnabled ? "text-green-500" : "text-gray-400"}
+                        >
+                          {task.notificationsEnabled ? (
+                            <Bell className="h-4 w-4" />
+                          ) : (
+                            <BellOff className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{task.notificationsEnabled ? "Disable notifications" : "Enable notifications"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
-                <Button variant="ghost" size="icon" onClick={handleComplete}>
+                {task.status !== 'completed' && (
+                  task.status === 'running' && !task.isPaused ? (
+                    <Button variant="ghost" size="icon" onClick={handlePause}>
+                      <Pause className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" size="icon" onClick={handleStart}>
+                      <Play className="h-4 w-4" />
+                    </Button>
+                  )
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleComplete}
+                  disabled={task.status === 'completed'}
+                >
                   <CheckCircle className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => deleteTask(task.id)}>

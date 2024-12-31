@@ -44,8 +44,6 @@ export const useTaskContext = () => {
   return context
 }
 
-export type { Task, LogoSettings }
-
 export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tasks, setTasks] = useState<Task[]>([])
   const [logoSettings, setLogoSettings] = useState<LogoSettings>({ style: 'animated' })

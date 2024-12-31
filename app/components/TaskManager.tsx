@@ -9,16 +9,12 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { PenLine, Plus, Save, FolderOpen } from 'lucide-react'
 import { useToast } from "@/app/components/ui/use-toast"
-import { useTheme } from 'next-themes'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/app/components/ui/dialog"
 
 export default function TaskManager() {
   const {
     tasks,
     updateTask,
-    deleteTask,
-    viewMode,
-    setViewMode,
     reorderTasks,
     projectName,
     setProjectName,
@@ -37,6 +33,17 @@ export default function TaskManager() {
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  useEffect(() => {
+    const stopTabTitleBlink = () => {
+      if ((window as any).tabTitleBlinkInterval) {
+        clearInterval((window as any).tabTitleBlinkInterval)
+        document.title = 'Hackeroso' // Reset to original title
+      }
+    }
+
+    stopTabTitleBlink()
   }, [])
 
   const pendingTasks = tasks.filter(task => task.status === 'pending')
@@ -171,22 +178,24 @@ export default function TaskManager() {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2 mb-6">
-            {isEditingProjectName ? (
-              <Input
-                value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
-                onBlur={handleProjectNameSave}
-                onKeyDown={handleProjectNameKeyDown}
-                className="text-3xl font-bold"
-              />
-            ) : (
-              <h1 className="text-2xl font-bold">{projectName}</h1>
-            )}
-            <Button variant="ghost" size="icon" onClick={handleProjectNameEdit}>
-              <PenLine className="h-4 w-4" />
-            </Button>
+        <div className="flex flex-col mb-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {isEditingProjectName ? (
+                <Input
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  onBlur={handleProjectNameSave}
+                  onKeyDown={handleProjectNameKeyDown}
+                  className="text-2xl font-bold"
+                />
+              ) : (
+                <h1 className="text-2xl font-bold">{projectName}</h1>
+              )}
+              <Button variant="ghost" size="icon" onClick={handleProjectNameEdit}>
+                <PenLine className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleNewProject}>
@@ -211,7 +220,9 @@ export default function TaskManager() {
           </div>
         </div>
 
-        <TaskForm />
+        <div className="mb-6">
+          <TaskForm />
+        </div>
 
         {tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground mt-12">
@@ -233,6 +244,7 @@ export default function TaskManager() {
                     <Droppable droppableId="running">
                       {(provided) => (
                         <div {...provided.droppableProps} ref={provided.innerRef}>
+                          <h3 className="text-sm font-medium mb-2">Running</h3>
                           <TaskList tasks={runningTasks} status="running" />
                           {provided.placeholder}
                         </div>
@@ -245,6 +257,17 @@ export default function TaskManager() {
                         <div {...provided.droppableProps} ref={provided.innerRef}>
                           <h3 className="text-sm font-medium mb-2">Pending</h3>
                           <TaskList tasks={pendingTasks} status="pending" />
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  )}
+                  {completedTasks.length > 0 && (
+                    <Droppable droppableId="completed">
+                      {(provided) => (
+                        <div {...provided.droppableProps} ref={provided.innerRef}>
+                          <h3 className="text-sm font-medium mb-2">Completed</h3>
+                          <TaskList tasks={completedTasks} status="completed" />
                           {provided.placeholder}
                         </div>
                       )}
