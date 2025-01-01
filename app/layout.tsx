@@ -20,10 +20,6 @@ export const metadata: Metadata = {
   keywords: ['tech news', 'hacker news', 'task management', 'productivity'],
   authors: [{ name: 'Hackeroso Team' }],
   creator: 'Hackeroso Team',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -45,7 +41,7 @@ export const metadata: Metadata = {
     title: 'Hackeroso - A Modern Hacker News Client',
     description: 'Discover tech news, discussions, and manage tasks with Hackeroso.',
     images: ['https://hackeroso.com/twitter-image.jpg'],
-    creator: '@hackeroso',
+    creator: '@pulidoman',
   },
   robots: {
     index: true,

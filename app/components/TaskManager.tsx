@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd'
 import TaskList from './TaskList'
 import TaskForm from './TaskForm'
@@ -9,19 +9,19 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { PenLine, Plus, Save, FolderOpen } from 'lucide-react'
 import { useToast } from "@/app/components/ui/use-toast"
-import { useTheme } from 'next-themes'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from "@/app/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/app/components/ui/dialog"
 
 export default function TaskManager() {
   const {
     tasks,
     updateTask,
+    deleteTask,
     reorderTasks,
     projectName,
     setProjectName,
     clearTasks,
     setTasks,
-  } =useTaskContext()
+  } = useTaskContext()
   const [isMobile, setIsMobile] = useState(false)
   const [isEditingProjectName, setIsEditingProjectName] = useState(false)
   const [newProjectName, setNewProjectName] = useState(projectName)
@@ -38,22 +38,11 @@ export default function TaskManager() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  useEffect(() => {
-    const stopTabTitleBlink = () => {
-      if ((window as any).tabTitleBlinkInterval) {
-        clearInterval((window as any).tabTitleBlinkInterval)
-        document.title = 'Hackeroso' // Reset to original title
-      }
-    }
-
-    stopTabTitleBlink()
-  }, [])
-
   const pendingTasks = tasks.filter(task => task.status === 'pending')
   const runningTasks = tasks.filter(task => task.status === 'running')
   const completedTasks = tasks.filter(task => task.status === 'completed')
 
-  const onDragEnd = (result: DropResult) => {
+  const onDragEnd = useCallback((result: DropResult) => {
     const { source, destination } = result
 
     if (!destination) {
@@ -74,27 +63,27 @@ export default function TaskManager() {
         reorderTasks(newStatus, source.index, destination.index)
       }
     }
-  }
+  }, [tasks, updateTask, reorderTasks])
 
-  const handleProjectNameEdit = () => {
+  const handleProjectNameEdit = useCallback(() => {
     setIsEditingProjectName(true)
-  }
+  }, [])
 
-  const handleProjectNameSave = () => {
+  const handleProjectNameSave = useCallback(() => {
     setProjectName(newProjectName)
     setIsEditingProjectName(false)
-  }
+  }, [newProjectName, setProjectName])
 
-  const handleProjectNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleProjectNameKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleProjectNameSave()
     } else if (e.key === 'Escape') {
       setNewProjectName(projectName)
       setIsEditingProjectName(false)
     }
-  }
+  }, [handleProjectNameSave, projectName])
 
-  const exportProject = () => {
+  const exportProject = useCallback(() => {
     const projectData = {
       name: projectName,
       tasks: tasks
@@ -112,9 +101,9 @@ export default function TaskManager() {
       title: "Project exported",
       description: "Your project has been successfully exported.",
     })
-  }
+  }, [projectName, tasks, toast])
 
-  const importProject = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const importProject = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       const reader = new FileReader()
@@ -141,43 +130,43 @@ export default function TaskManager() {
       }
       reader.readAsText(file)
     }
-  }
+  }, [setProjectName, setTasks, toast])
 
-  const handleNewProject = () => {
+  const handleNewProject = useCallback(() => {
     if (tasks.length > 0) {
       setConfirmAction('new')
       setIsConfirmDialogOpen(true)
     } else {
       createNewProject()
     }
-  }
+  }, [tasks.length])
 
-  const handleLoadProject = () => {
+  const handleLoadProject = useCallback(() => {
     if (tasks.length > 0) {
       setConfirmAction('load')
       setIsConfirmDialogOpen(true)
     } else {
       document.getElementById('file-input')?.click()
     }
-  }
+  }, [tasks.length])
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = useCallback(() => {
     if (confirmAction === 'new') {
       createNewProject()
     } else if (confirmAction === 'load') {
       document.getElementById('file-input')?.click()
     }
     setIsConfirmDialogOpen(false)
-  }
+  }, [confirmAction])
 
-  const createNewProject = () => {
+  const createNewProject = useCallback(() => {
     setProjectName('New Project')
     clearTasks()
     toast({
       title: "New Project Created",
       description: "A new project has been started with an empty task list.",
     })
-  }
+  }, [setProjectName, clearTasks, toast])
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -340,3 +329,4 @@ export default function TaskManager() {
     </DragDropContext>
   )
 }
+

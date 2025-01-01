@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { Task, LogoSettings } from '../types'
 import { useToast } from "../components/ui/use-toast"
 
@@ -29,10 +29,9 @@ interface TaskContextType {
   pendingTasksCount: number
   isTask: (url: string) => boolean
   removeTaskByUrl: (url: string) => void
-  requestNotificationPermission: () => Promise<boolean>
-  sendNotification: (title: string, body: string) => void
   clearTasks: () => void
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>
+  sendNotification: (title: string, body: string) => void
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
@@ -90,11 +89,11 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [tasks, logoSettings, fireEffectEnabled, credits, notificationsEnabled, soundEnabled, viewMode, customColumns, projectName])
 
   useEffect(() => {
-    const pendingCount = tasks.filter(task => task.status === 'pending').length;
-    setPendingTasksCount(pendingCount);
-  }, [tasks]);
+    const pendingCount = tasks.filter(task => task.status === 'pending').length
+    setPendingTasksCount(pendingCount)
+  }, [tasks])
 
-  const addTask = (task: Omit<Task, 'id' | 'createdAt' | 'accumulatedTime'>) => {
+  const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt' | 'accumulatedTime'>) => {
     const newTask: Task = {
       ...task,
       id: Date.now().toString(),
@@ -107,141 +106,126 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       title: "Task Added",
       description: `New task "${newTask.title}" has been added.`,
     })
-  }
+  }, [toast])
 
-  const updateTask = (updatedTask: Partial<Task> & { id: string }) => {
+  const updateTask = useCallback((updatedTask: Partial<Task> & { id: string }) => {
     setTasks(prevTasks => prevTasks.map(task => {
       if (task.id === updatedTask.id) {
-        const newTask = { ...task, ...updatedTask };
+        const newTask = { ...task, ...updatedTask }
 
-        // Notification toggle toast
         if (newTask.notificationsEnabled !== task.notificationsEnabled) {
           toast({
             title: newTask.notificationsEnabled ? "Notifications Enabled" : "Notifications Disabled",
             description: `Notifications for task "${task.title}" have been ${newTask.notificationsEnabled ? 'enabled' : 'disabled'}.`,
-          });
+          })
         }
 
-        // Don't update time for completed tasks
         if (task.status === 'completed') {
-          return { ...newTask, accumulatedTime: task.accumulatedTime };
+          return { ...newTask, accumulatedTime: task.accumulatedTime }
         }
 
-        // Handle task starting
         if (newTask.status === 'running' && !task.startedAt && !newTask.isPaused) {
-          newTask.startedAt = new Date().toISOString();
-          newTask.lastPausedAt = undefined;
+          newTask.startedAt = new Date().toISOString()
+          newTask.lastPausedAt = undefined
         }
 
-        // Handle task pausing
         if (newTask.isPaused && !task.isPaused && task.startedAt) {
-          const now = new Date();
-          const startTime = new Date(task.startedAt);
-          const additionalTime = now.getTime() - startTime.getTime();
-          newTask.accumulatedTime = (task.accumulatedTime || 0) + additionalTime;
-          newTask.lastPausedAt = now.toISOString();
+          const now = new Date()
+          const startTime = new Date(task.startedAt)
+          const additionalTime = now.getTime() - startTime.getTime()
+          newTask.accumulatedTime = (task.accumulatedTime || 0) + additionalTime
+          newTask.lastPausedAt = now.toISOString()
         }
 
-        // Handle task resuming
         if (!newTask.isPaused && task.isPaused) {
-          newTask.startedAt = new Date().toISOString();
-          newTask.lastPausedAt = undefined;
+          newTask.startedAt = new Date().toISOString()
+          newTask.lastPausedAt = undefined
         }
 
-        // Handle task completion
-        const isCompleted = (newTask.status === 'completed');
-        const wasNotCompleted = (task.status === 'pending' || task.status === 'running');
+        const isCompleted = (newTask.status === 'completed')
+        const wasNotCompleted = (task.status === 'pending' || task.status === 'running')
         if (isCompleted && wasNotCompleted) {
-          newTask.completedAt = new Date().toISOString();
+          newTask.completedAt = new Date().toISOString()
           if (task.status === 'running' && task.startedAt && !task.isPaused) {
-            const now = new Date();
-            const startTime = new Date(task.startedAt);
-            newTask.accumulatedTime = (task.accumulatedTime || 0) + (now.getTime() - startTime.getTime());
+            const now = new Date()
+            const startTime = new Date(task.startedAt)
+            newTask.accumulatedTime = (task.accumulatedTime || 0) + (now.getTime() - startTime.getTime())
           }
         }
 
-        return newTask;
+        return newTask
       }
-      return task;
-    }));
-  }
+      return task
+    }))
+  }, [toast])
 
-  const deleteTask = (id: string) => {
+  const deleteTask = useCallback((id: string) => {
     setTasks(prevTasks => prevTasks.filter(task => task.id !== id))
-  }
+  }, [])
 
-  const reorderTasks = (status: 'pending' | 'running' | 'completed', startIndex: number, endIndex: number) => {
+  const reorderTasks = useCallback((status: 'pending' | 'running' | 'completed', startIndex: number, endIndex: number) => {
     setTasks(prevTasks => {
       const result = Array.from(prevTasks)
       const [reorderedItem] = result.splice(startIndex, 1)
       result.splice(endIndex, 0, reorderedItem)
       return result
     })
-  }
+  }, [])
 
-  const isTask = (url: string) => {
-    return tasks.some(task => task.url === url);
-  };
+  const isTask = useCallback((url: string) => {
+    return tasks.some(task => task.url === url)
+  }, [tasks])
 
-  const removeTaskByUrl = (url: string) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.url !== url));
-  };
+  const removeTaskByUrl = useCallback((url: string) => {
+    setTasks(prevTasks => prevTasks.filter(task => task.url !== url))
+  }, [])
 
-  const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) {
-      console.log("This browser does not support desktop notification");
-      return false;
-    }
+  const clearTasks = useCallback(() => {
+    setTasks([])
+  }, [])
 
-    let permission = await Notification.requestPermission();
-    return permission === "granted";
-  };
-
-  const sendNotification = (title: string, body: string) => {
+  const sendNotification = useCallback((title: string, body: string) => {
     if (Notification.permission === "granted") {
-      new Notification(title, { body });
+      new Notification(title, { body })
     }
     toast({
       title: title,
       description: body,
     })
+  }, [toast])
+
+  const contextValue = {
+    tasks,
+    addTask,
+    updateTask,
+    deleteTask,
+    logoSettings,
+    setLogoSettings,
+    fireEffectEnabled,
+    setFireEffectEnabled,
+    credits,
+    setCredits,
+    notificationsEnabled,
+    setNotificationsEnabled,
+    soundEnabled,
+    setSoundEnabled,
+    viewMode,
+    setViewMode,
+    customColumns,
+    setCustomColumns,
+    projectName,
+    setProjectName,
+    reorderTasks,
+    pendingTasksCount,
+    isTask,
+    removeTaskByUrl,
+    clearTasks,
+    setTasks,
+    sendNotification,
   }
 
-  const clearTasks = () => {
-    setTasks([]);
-  };
-
   return (
-    <TaskContext.Provider value={{
-      tasks,
-      addTask,
-      updateTask,
-      deleteTask,
-      logoSettings,
-      setLogoSettings,
-      fireEffectEnabled,
-      setFireEffectEnabled,
-      credits,
-      setCredits,
-      notificationsEnabled,
-      setNotificationsEnabled,
-      soundEnabled,
-      setSoundEnabled,
-      viewMode,
-      setViewMode,
-      customColumns,
-      setCustomColumns,
-      projectName,
-      setProjectName,
-      reorderTasks,
-      pendingTasksCount,
-      isTask,
-      removeTaskByUrl,
-      requestNotificationPermission,
-      sendNotification,
-      clearTasks,
-      setTasks,
-    }}>
+    <TaskContext.Provider value={contextValue}>
       {children}
     </TaskContext.Provider>
   )

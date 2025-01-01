@@ -2,22 +2,24 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTaskContext } from '../contexts/TaskContext'
-import { Button } from "@/app/components/ui/button"
-import { Card } from "@/app/components/ui/card"
+import { Button } from "./ui/button"
+import { Card } from "./ui/card"
 import { Bell, BellOff, Play, Pause, CheckCircle, Trash2, Timer, HourglassIcon, Flag, GripVertical, ExternalLink, ChevronDown } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Draggable } from 'react-beautiful-dnd'
-import { Input } from "@/app/components/ui/input"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/app/components/ui/tooltip"
-import { useToast } from "@/app/components/ui/use-toast"
-import { Task } from "@/app/types"
+import { Input } from "./ui/input"
+import { Badge } from "./ui/badge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
+import { useToast } from "./ui/use-toast"
+import { Task } from '../types'
+
 interface TaskItemProps {
   task: Task
   index: number
 }
 
 export default function TaskItem({ task, index }: TaskItemProps) {
-  const { updateTask, deleteTask, requestNotificationPermission, sendNotification } = useTaskContext()
+  const { updateTask, deleteTask, sendNotification } = useTaskContext()
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isEditingDuration, setIsEditingDuration] = useState(false)
   const [editedDuration, setEditedDuration] = useState(task.expectedDuration.toString())
@@ -29,13 +31,13 @@ export default function TaskItem({ task, index }: TaskItemProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const { toast } = useToast()
 
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const totalMinutes = Math.floor(seconds / 60)
     const hours = Math.floor(totalMinutes / 60)
     const minutes = totalMinutes % 60
     const remainingSeconds = seconds % 60
     return `${hours > 0 ? `${hours}:` : ''}${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
-  }
+  }, [])
 
   const handleComplete = useCallback(() => {
     const now = new Date().getTime()
@@ -51,6 +53,7 @@ export default function TaskItem({ task, index }: TaskItemProps) {
     toast({
       title: "Task Completed",
       description: `Your task "${task.title}" has been completed!`,
+      duration: 5000,
     })
   }, [task.id, task.startedAt, task.accumulatedTime, task.title, updateTask, toast])
 
@@ -82,7 +85,7 @@ export default function TaskItem({ task, index }: TaskItemProps) {
         clearInterval(timerRef.current)
       }
     }
-  }, [task.status, task.startedAt, task.isPaused, task.accumulatedTime, task.expectedDuration, task.notificationsEnabled, task.title, sendNotification, handleComplete])
+  }, [task, handleComplete, sendNotification])
 
   useEffect(() => {
     if (isEditingDuration && durationInputRef.current) {
@@ -90,28 +93,6 @@ export default function TaskItem({ task, index }: TaskItemProps) {
       durationInputRef.current.select()
     }
   }, [isEditingDuration])
-
-  useEffect(() => {
-    let blinkInterval: NodeJS.Timeout
-    if (isBlinking) {
-      blinkInterval = setInterval(() => {
-        setIsBlinking((prev) => !prev)
-      }, 500)
-    }
-    return () => clearInterval(blinkInterval)
-  }, [isBlinking])
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        stopTabTitleBlink()
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
-  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -126,7 +107,7 @@ export default function TaskItem({ task, index }: TaskItemProps) {
     }
   }, [])
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     updateTask({
       id: task.id,
       status: 'running',
@@ -137,10 +118,11 @@ export default function TaskItem({ task, index }: TaskItemProps) {
     toast({
       title: "Task Started",
       description: `Task "${task.title}" has been started.`,
+      duration: 3000,
     })
-  }
+  }, [task.id, task.title, updateTask, toast])
 
-  const handlePause = () => {
+  const handlePause = useCallback(() => {
     updateTask({
       id: task.id,
       status: 'running',
@@ -149,23 +131,12 @@ export default function TaskItem({ task, index }: TaskItemProps) {
     toast({
       title: "Task Paused",
       description: `Task "${task.title}" has been paused.`,
+      duration: 3000,
     })
-  }
+  }, [task.id, task.title, updateTask, toast])
 
-  const handleNotificationToggle = async () => {
-    if (task.status === 'completed') return;
-    if (!task.notificationsEnabled) {
-      const permissionGranted = await requestNotificationPermission()
-      if (!permissionGranted) {
-        console.log("Notification permission denied")
-        toast({
-          title: "Notification Permission Denied",
-          description: "Please enable notifications in your browser settings.",
-          variant: "destructive",
-        })
-        return
-      }
-    }
+  const handleNotificationToggle = useCallback(() => {
+    if (task.status === 'completed') return
     updateTask({
       id: task.id,
       notificationsEnabled: !task.notificationsEnabled,
@@ -174,19 +145,19 @@ export default function TaskItem({ task, index }: TaskItemProps) {
       title: task.notificationsEnabled ? "Notifications Disabled" : "Notifications Enabled",
       description: `Notifications for task "${task.title}" have been ${task.notificationsEnabled ? 'disabled' : 'enabled'}.`,
     })
-  }
+  }, [task.id, task.status, task.notificationsEnabled, task.title, updateTask, toast])
 
-  const handleDurationClick = () => {
+  const handleDurationClick = useCallback(() => {
     if (!task.isPaused && task.status === 'running') return
     setIsEditingDuration(true)
-  }
+  }, [task.isPaused, task.status])
 
-  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDurationChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '')
     setEditedDuration(value)
-  }
+  }, [])
 
-  const handleDurationSubmit = () => {
+  const handleDurationSubmit = useCallback(() => {
     const newDuration = parseInt(editedDuration)
     if (!isNaN(newDuration) && newDuration > 0) {
       updateTask({
@@ -201,40 +172,34 @@ export default function TaskItem({ task, index }: TaskItemProps) {
       setEditedDuration(task.expectedDuration.toString())
     }
     setIsEditingDuration(false)
-  }
+  }, [editedDuration, task.id, task.expectedDuration, updateTask, toast])
 
-  const handleDurationBlur = () => {
+  const handleDurationBlur = useCallback(() => {
     handleDurationSubmit()
-  }
+  }, [handleDurationSubmit])
 
-  const handleDurationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleDurationKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleDurationSubmit()
     } else if (e.key === 'Escape') {
       setEditedDuration(task.expectedDuration.toString())
       setIsEditingDuration(false)
     }
-  }
+  }, [handleDurationSubmit, task.expectedDuration])
 
-  const toggleTimerMode = () => {
+  const toggleTimerMode = useCallback(() => {
     setIsReverseTimer(!isReverseTimer)
-  }
+  }, [])
 
-  const getTimerDisplay = () => {
+  const getTimerDisplay = useCallback(() => {
     if (isReverseTimer) {
       const remainingTime = Math.max(0, task.expectedDuration * 60 - elapsedTime)
       return formatTime(remainingTime)
     }
     return formatTime(elapsedTime)
-  }
+  }, [isReverseTimer, task.expectedDuration, elapsedTime, formatTime])
 
-  const priorityColors = {
-    low: 'bg-green-500',
-    medium: 'bg-yellow-500',
-    high: 'bg-red-500'
-  }
-
-  const handlePriorityChange = (newPriority: 'low' | 'medium' | 'high') => {
+  const handlePriorityChange = useCallback((newPriority: 'low' | 'medium' | 'high') => {
     updateTask({
       id: task.id,
       priority: newPriority,
@@ -244,9 +209,9 @@ export default function TaskItem({ task, index }: TaskItemProps) {
       description: `Task priority updated to ${newPriority}.`,
     })
     setIsPriorityDropdownOpen(false)
-  }
+  }, [task.id, updateTask, toast])
 
-  const startTabTitleBlink = (message: string) => {
+  const startTabTitleBlink = useCallback((message: string) => {
     let isOriginal = false
     const originalTitle = document.title
     const interval = setInterval(() => {
@@ -256,14 +221,14 @@ export default function TaskItem({ task, index }: TaskItemProps) {
 
     // Store the interval ID on the window object
     (window as any).tabTitleBlinkInterval = interval
-  }
+  }, [])
 
-  const stopTabTitleBlink = () => {
+  const stopTabTitleBlink = useCallback(() => {
     if ((window as any).tabTitleBlinkInterval) {
       clearInterval((window as any).tabTitleBlinkInterval)
       document.title = 'Hackeroso' // Reset to original title
     }
-  }
+  }, [])
 
   return (
     <Draggable draggableId={task.id} index={index}>

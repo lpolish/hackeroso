@@ -49,7 +49,7 @@ function formatDate(timestamp: number): string {
 }
 
 async function fetchItem(id: string): Promise<Item> {
-  const res = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
+  const res = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, { cache: 'no-store' })
   if (!res.ok) throw new Error('Failed to fetch item')
   return res.json()
 }
@@ -57,7 +57,7 @@ async function fetchItem(id: string): Promise<Item> {
 async function fetchComments(ids: number[]): Promise<Comment[]> {
   const comments = await Promise.all(
     ids.map(async (id) => {
-      const res = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
+      const res = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, { cache: 'no-store' })
       if (!res.ok) throw new Error(`Failed to fetch comment ${id}`)
       const comment: Comment = await res.json()
       if (comment.kids) {
@@ -66,10 +66,12 @@ async function fetchComments(ids: number[]): Promise<Comment[]> {
       return comment
     })
   )
-  return comments
+  return comments.filter(Boolean)
 }
 
 function Comment({ comment }: { comment: Comment }) {
+  if (!comment) return null
+  
   return (
     <div className="border-l-2 border-gray-200 dark:border-zinc-700 pl-4 mb-4">
       <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -80,12 +82,12 @@ function Comment({ comment }: { comment: Comment }) {
       </div>
       <div 
         className="text-sm text-gray-700 dark:text-gray-300 mb-2"
-        dangerouslySetInnerHTML={{ __html: comment.text }}
+        dangerouslySetInnerHTML={{ __html: comment.text || '' }}
       />
       {comment.kidsData && comment.kidsData.length > 0 && (
         <div className="mt-2">
           {comment.kidsData.map((kidComment) => (
-            <Comment key={kidComment.id} comment={kidComment} />
+            kidComment && <Comment key={kidComment.id} comment={kidComment} />
           ))}
         </div>
       )}
@@ -118,26 +120,28 @@ async function ItemContent({ id }: { id: string }) {
           Comments ({comments.length})
         </h2>
         {comments.map((comment) => (
-          <Comment key={comment.id} comment={comment} />
+          comment && <Comment key={comment.id} comment={comment} />
         ))}
       </section>
     </>
   )
 }
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
-export default async function ItemPage(props: PageProps) {
-  const { id } = await props.params
+export default async function ItemPage({
+  params
+}: {
+  params: { id: string }
+}) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-zinc-900">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
-        <Suspense fallback={<div>Loading...</div>}>
-          <ItemContent id={id} />
+        <Suspense fallback={
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-pulse text-gray-500 dark:text-gray-400">Loading...</div>
+          </div>
+        }>
+          <ItemContent id={params.id} />
         </Suspense>
       </main>
       <Footer />
