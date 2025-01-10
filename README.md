@@ -24,7 +24,7 @@ Hackeroso is a modern Hacker News client with integrated task management, built 
 ### Prerequisites
 
 - Node.js 18.x or later
-- npm or yarn
+- pnpm
 
 ### Installation
 
@@ -79,10 +79,9 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Available Scripts
 
-- `npm run dev`: Runs the app in development mode
-- `npm run build`: Builds the app for production
-- `npm start`: Runs the built app in production mode
-- `npm run lint`: Lints the codebase
+- `pnpm dev`: Runs the app in development mode
+- `pnpm build`: Builds the app for production
+- `pnpm lint`: Lints the codebase
 
 ## Contributing
 
