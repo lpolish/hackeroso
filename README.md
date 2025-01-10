@@ -31,7 +31,7 @@ Hackeroso is a modern Hacker News client with integrated task management, built 
 1. Clone the repository:
 
    \`\`\`bash
-   git clone https://github.com/yourusername/hackeroso.git
+   git clone https://github.com/lpolish/hackeroso.git
    cd hackeroso
    \`\`\`
 
@@ -60,27 +60,6 @@ yarn dev
 \`\`\`
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## Project Structure
-
-\`\`\`
-hackeroso/
-├── app/
-│   ├── components/
-│   ├── contexts/
-│   ├── lib/
-│   ├── types/
-│   ├── utils/
-│   ├── layout.tsx
-│   └── page.tsx
-├── public/
-├── styles/
-├── next.config.js
-├── package.json
-├── README.md
-├── tailwind.config.js
-└── tsconfig.json
-\`\`\`
 
 ## Available Scripts
 
