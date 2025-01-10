@@ -1,14 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { X, Search, Moon, Sun, Laptop, LogIn, Send } from 'lucide-react'
-import { useEffect } from 'react'
+import { X, Search, Moon, Sun, Laptop, LogIn, Send, Heart, Bell, BellOff, HelpCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Badge } from "./ui/badge"
+import { Switch } from "./ui/switch"
+import Footer from './Footer'
 
 type MobileMenuProps = {
   isOpen: boolean
   onClose: () => void
-  navItems: Array<{ href: string; label: string; icon: React.ElementType }>
+  navItems: Array<{ href: string; label: string; icon: React.ElementType } | { group: string; items: Array<{ href: string; label: string; icon: React.ElementType }> }>
   isActive: (path: string) => boolean
   searchQuery: string
   setSearchQuery: (query: string) => void
@@ -16,6 +18,9 @@ type MobileMenuProps = {
   theme: 'light' | 'dark' | 'system'
   toggleTheme: () => void
   pendingTasksCount: number
+  notificationsEnabled: boolean
+  setNotificationsEnabled: (enabled: boolean) => void
+  onSupportClick: () => void;
 }
 
 export default function MobileMenu({
@@ -28,8 +33,12 @@ export default function MobileMenu({
   handleSearch,
   theme,
   toggleTheme,
-  pendingTasksCount
+  pendingTasksCount,
+  notificationsEnabled,
+  setNotificationsEnabled,
+  onSupportClick
 }: MobileMenuProps) {
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768 && isOpen) {
@@ -55,113 +64,211 @@ export default function MobileMenu({
   return (
     <>
       <div
-        className={`fixed inset-0 bg-black/50 z-50 transition-opacity duration-300 md:hidden
+        className={`fixed inset-0 bg-black/50 z-[9998] transition-opacity duration-300 md:hidden
           ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
       />
 
       <div
-        className={`fixed inset-y-0 right-0 w-full max-w-sm bg-white dark:bg-zinc-900 z-[60] 
-                   transform transition-transform duration-300 ease-in-out shadow-xl md:hidden
+        className={`fixed inset-0 w-full bg-zinc-900 z-[9999] 
+                   transform transition-transform duration-300 ease-in-out md:hidden
+                   overflow-y-auto
                    ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-zinc-800">
+        <div className="flex flex-col min-h-full">
+          <div className="flex items-center justify-between p-3 border-b border-zinc-800">
             <div className="group relative">
               <Link href="/" className="text-lg font-bold tracking-tighter bg-gradient-to-r from-green-400 to-green-300 bg-clip-text text-transparent" onClick={onClose}>
                 hackeroso
               </Link>
-              <div className="absolute -bottom-3 left-0 w-full overflow-hidden h-4 pointer-events-none">
-                <span className="text-[0.65rem] font-medium text-orange-500 transform translate-y-4 transition-transform duration-200 block text-center group-hover:translate-y-0 group-active:translate-y-0">
-                  HACKER NEWS VIBROSO
-                </span>
-              </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full text-gray-700 dark:text-gray-400"
+              className="p-2 hover:bg-zinc-800 rounded-full text-zinc-400"
               aria-label="close menu"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="p-4 border-b border-gray-200 dark:border-zinc-800">
+          <div className="p-3 border-b border-zinc-800">
             <form onSubmit={handleSearch} className="relative">
               <input
                 type="text"
                 placeholder="search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-green-500"
+                className="w-full pl-9 pr-4 py-2 text-sm rounded-lg bg-zinc-800 text-zinc-200 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 w-4 h-4" />
             </form>
           </div>
 
-          <nav className="flex-1 overflow-y-auto p-4">
-            <ul className="space-y-3">
-              {navItems.map((item) => (
-                <li key={item.href}>
-                  <Link 
-                    href={item.href} 
-                    className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium
-                             ${isActive(item.href) 
-                               ? 'text-orange-500 bg-orange-50 dark:text-green-400 dark:bg-zinc-800' 
-                               : 'text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
-                             }`}
+          <nav className="px-2 py-4">
+            <div className="space-y-1">
+              <div className="mb-2">
+                <div className="px-3 mb-1">
+                  <span className="text-xs font-medium text-zinc-500">News</span>
+                </div>
+                {navItems.filter(item => 'group' in item && item.group === 'News').map(group => (
+                  'items' in group && group.items.map(item => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium ${
+                        isActive(item.href)
+                          ? 'text-green-400 bg-zinc-800'
+                          : 'text-zinc-400 hover:bg-zinc-800'
+                      }`}
+                      onClick={onClose}
+                    >
+                      <item.icon className="w-4 h-4 mr-3" />
+                      {item.label}
+                    </Link>
+                  ))
+                ))}
+              </div>
+
+              <div className="mb-2">
+                <div className="px-3 mb-1">
+                  <span className="text-xs font-medium text-zinc-500">Trends</span>
+                </div>
+                {navItems.filter(item => 'group' in item && item.group === 'Trends').map(group => (
+                  'items' in group && group.items.map(item => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium ${
+                        isActive(item.href)
+                          ? 'text-green-400 bg-zinc-800'
+                          : 'text-zinc-400 hover:bg-zinc-800'
+                      }`}
+                      onClick={onClose}
+                    >
+                      <item.icon className="w-4 h-4 mr-3" />
+                      {item.label}
+                    </Link>
+                  ))
+                ))}
+              </div>
+
+              <div className="mb-2">
+                <div className="px-3 mb-1">
+                  <span className="text-xs font-medium text-zinc-500">Personal</span>
+                </div>
+                {navItems.filter(item => !('group' in item) && ['tasks', 'profile'].includes(item.label)).map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium ${
+                      isActive(item.href)
+                        ? 'text-green-400 bg-zinc-800'
+                        : 'text-zinc-400 hover:bg-zinc-800'
+                    }`}
                     onClick={onClose}
                   >
-                    <item.icon className="w-5 h-5 mr-3" />
-                    {item.label}
+                    <item.icon className="w-4 h-4 mr-3" />
+                    {item.label === 'profile' ? 'Dashboard' : item.label}
                     {item.label === 'tasks' && pendingTasksCount > 0 && (
                       <Badge variant="secondary" className="ml-2">
                         {pendingTasksCount}
                       </Badge>
                     )}
                   </Link>
-                </li>
+                ))}
+              </div>
+
+              {navItems.filter(item => !('group' in item) && !['tasks', 'profile'].includes(item.label)).map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium ${
+                    isActive(item.href)
+                      ? 'text-green-400 bg-zinc-800'
+                      : 'text-zinc-400 hover:bg-zinc-800'
+                  }`}
+                  onClick={onClose}
+                >
+                  <item.icon className="w-4 h-4 mr-3" />
+                  {item.label}
+                </Link>
               ))}
-            </ul>
+            </div>
           </nav>
 
-          <div className="p-4 border-t border-gray-200 dark:border-zinc-800">
-            <div className="flex flex-col space-y-4">
+          <div className="px-2 py-4 border-t border-zinc-800">
+            <div className="space-y-1">
+              <div className="px-3 mb-1">
+                <span className="text-xs font-medium text-zinc-500">Settings</span>
+              </div>
+              <button 
+                onClick={() => {
+                  onClose();
+                  onSupportClick();
+                }} 
+                className="flex items-center px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 rounded-md w-full"
+              >
+                <Heart className="w-4 h-4 mr-3 text-green-500" />
+                Support this project
+              </button>
+              <div className="flex items-center justify-between px-3 py-1.5 text-sm text-zinc-400">
+                <div className="flex items-center">
+                  {theme === 'light' ? (
+                    <Sun className="w-4 h-4 mr-3" />
+                  ) : theme === 'dark' ? (
+                    <Moon className="w-4 h-4 mr-3" />
+                  ) : (
+                    <Laptop className="w-4 h-4 mr-3" />
+                  )}
+                  Theme
+                </div>
+                <button onClick={toggleTheme} className="p-1.5 rounded-full hover:bg-zinc-800">
+                  {theme === 'light' ? (
+                    <Sun className="w-4 h-4" />
+                  ) : theme === 'dark' ? (
+                    <Moon className="w-4 h-4" />
+                  ) : (
+                    <Laptop className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              <div className="flex items-center justify-between px-3 py-1.5 text-sm text-zinc-400">
+                <div className="flex items-center">
+                  {notificationsEnabled ? (
+                    <Bell className="w-4 h-4 mr-3" />
+                  ) : (
+                    <BellOff className="w-4 h-4 mr-3" />
+                  )}
+                  Notifications
+                </div>
+                <Switch
+                  checked={notificationsEnabled}
+                  onCheckedChange={setNotificationsEnabled}
+                />
+              </div>
               <a
                 href="https://news.ycombinator.com/login?goto=news"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-green-400"
+                className="flex items-center px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 rounded-md"
               >
-                <LogIn className="w-4 h-4 mr-1.5" />
+                <LogIn className="w-4 h-4 mr-3" />
                 Login
               </a>
               <a
                 href="https://news.ycombinator.com/submit"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-green-400"
+                className="flex items-center px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 rounded-md"
               >
-                <Send className="w-4 h-4 mr-1.5" />
+                <Send className="w-4 h-4 mr-3" />
                 Submit
               </a>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Theme</span>
-                <button 
-                  onClick={toggleTheme}
-                  className="p-1.5 rounded-full bg-gray-100 dark:bg-zinc-800"
-                  aria-label="Toggle theme"
-                >
-                  {theme === 'light' ? (
-                    <Sun className="w-5 h-5 text-gray-700" />
-                  ) : theme === 'dark' ? (
-                    <Moon className="w-5 h-5 text-green-400" />
-                  ) : (
-                    <Laptop className="w-5 h-5 text-gray-700 dark:text-green-400" />
-                  )}
-                </button>
-              </div>
             </div>
+          </div>
+
+          <div className="mt-auto border-t border-zinc-800">
+            <Footer className="py-4 px-3 text-xs" isMobileMenu={true} />
           </div>
         </div>
       </div>

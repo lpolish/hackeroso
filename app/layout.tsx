@@ -3,8 +3,11 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import ThemeInitializer from './components/ThemeInitializer'
 import { TaskProvider } from './contexts/TaskContext'
+import { SavedItemsProvider } from './contexts/SavedItemsContext'
 import { Analytics } from '@vercel/analytics/react'
-import { Toaster } from "./components/ui/toaster"  // Cambiado de @/components a ruta relativa
+import { Toaster } from "./components/ui/toaster"
+import ErrorBoundary from './components/ErrorBoundary'
+import { DialogProvider } from './components/providers/DialogProvider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -20,6 +23,10 @@ export const metadata: Metadata = {
   keywords: ['tech news', 'hacker news', 'task management', 'productivity'],
   authors: [{ name: 'Hackeroso Team' }],
   creator: 'Hackeroso Team',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: 'white' },
+    { media: '(prefers-color-scheme: dark)', color: 'black' },
+  ],
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -41,7 +48,7 @@ export const metadata: Metadata = {
     title: 'Hackeroso - A Modern Hacker News Client',
     description: 'Discover tech news, discussions, and manage tasks with Hackeroso.',
     images: ['https://hackeroso.com/twitter-image.jpg'],
-    creator: '@pulidoman',
+    creator: '@hackeroso',
   },
   robots: {
     index: true,
@@ -66,35 +73,44 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
       </head>
-      <body className={`${inter.className} pt-safe`}>
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              function getThemePreference() {
-                const storedTheme = localStorage.getItem('theme');
-                return storedTheme || 'system';
-              }
-              
-              function applyTheme(theme) {
-                document.documentElement.classList.remove('light', 'dark');
-                if (theme === 'system') {
-                  const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                  document.documentElement.classList.add(systemTheme);
-                } else {
-                  document.documentElement.classList.add(theme);
+      <body className={`${inter.className} pt-safe content-container`}>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function getThemePreference() {
+                  const storedTheme = localStorage.getItem('theme');
+                  return storedTheme || 'system';
                 }
-              }
-              
-              const theme = getThemePreference();
-              applyTheme(theme);
-            })();
-          `
-        }} />
+                
+                function applyTheme(theme) {
+                  document.documentElement.classList.remove('light', 'dark');
+                  if (theme === 'system') {
+                    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                    document.documentElement.classList.add(systemTheme);
+                  } else {
+                    document.documentElement.classList.add(theme);
+                  }
+                }
+                
+                const theme = getThemePreference();
+                applyTheme(theme);
+              })();
+            `
+          }}
+        />
         <ThemeInitializer />
-        <TaskProvider>
-          {children}
-        </TaskProvider>
-        <Toaster />
+        <SavedItemsProvider>
+          <TaskProvider>
+            <DialogProvider>
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
+              <div id="modal-root" />
+              <Toaster />
+            </DialogProvider>
+          </TaskProvider>
+        </SavedItemsProvider>
         <Analytics />
       </body>
     </html>

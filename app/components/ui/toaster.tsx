@@ -1,13 +1,13 @@
 "use client"
 
 import {
-  Toast,
   ToastClose,
   ToastDescription,
   ToastProvider,
   ToastTitle,
   ToastViewport,
 } from "../ui/toast"
+import { ToastWrapper } from "./ToastWrapper"
 import { useToast } from "../ui/use-toast"
 
 export function Toaster() {
@@ -17,7 +17,7 @@ export function Toaster() {
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
-          <Toast key={id} {...props} onClick={() => dismiss(id)}>
+          <ToastWrapper key={id} {...props} onClick={() => dismiss(id)}>
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
@@ -26,7 +26,7 @@ export function Toaster() {
             </div>
             {action}
             <ToastClose />
-          </Toast>
+          </ToastWrapper>
         )
       })}
       <ToastViewport />

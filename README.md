@@ -4,11 +4,12 @@ Hackeroso is a modern Hacker News client with integrated task management, built 
 
 ## Features
 
-- Search functionality
-- Responsive design for mobile and desktop
-- Dark mode support
-- Integrated task management system
-- Client-side data persistence
+- 🚀 Real-time Hacker News feed
+- 🔍 Advanced search functionality
+- 📱 Responsive design for mobile and desktop
+- 🌓 Dark mode support
+- ✅ Integrated task management system
+- 🔒 Client-side data persistence
 
 ## Tech Stack
 
@@ -23,48 +24,70 @@ Hackeroso is a modern Hacker News client with integrated task management, built 
 ### Prerequisites
 
 - Node.js 18.x or later
-- pnpm
+- npm or yarn
 
 ### Installation
 
 1. Clone the repository:
 
-   ```bash
+   \`\`\`bash
    git clone https://github.com/yourusername/hackeroso.git
    cd hackeroso
-   ```
+   \`\`\`
 
 2. Install dependencies:
 
-   ```bash
-   pnpm installl
-   ```
+   \`\`\`bash
+   npm install
+   # or
+   yarn install
+   \`\`\`
 
-3. Create a `.env.local` file in the root directory and add any necessary environment variables:
+3. Create a \`.env.local\` file in the root directory and add any necessary environment variables:
 
-   ```
-   NEXT_PUBLIC_API_URL=https://your-url.example.com
-   ```
+   \`\`\`
+   NEXT_PUBLIC_API_URL=https://hacker-news.firebaseio.com/v0
+   \`\`\`
 
 ### Running the Development Server
 
 Run the development server:
 
-```bash
+\`\`\`bash
 npm run dev
 # or
 yarn dev
-```
+\`\`\`
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Project Structure
+
+\`\`\`
+hackeroso/
+├── app/
+│   ├── components/
+│   ├── contexts/
+│   ├── lib/
+│   ├── types/
+│   ├── utils/
+│   ├── layout.tsx
+│   └── page.tsx
+├── public/
+├── styles/
+├── next.config.js
+├── package.json
+├── README.md
+├── tailwind.config.js
+└── tsconfig.json
+\`\`\`
 
 ## Available Scripts
 
-- `npm run dev`: Runs the app in development mode
-- `npm run build`: Builds the app for production
-- `npm start`: Runs the built app in production mode
-- `npm run lint`: Lints the codebase
+- \`npm run dev\`: Runs the app in development mode
+- \`npm run build\`: Builds the app for production
+- \`npm start\`: Runs the built app in production mode
+- \`npm run lint\`: Lints the codebase
 
 ## Contributing
 
@@ -72,7 +95,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0.
+This project is licensed under the MIT License.
 
 ## Acknowledgements
 
@@ -81,6 +104,4 @@ This project is licensed under the Apache License, Version 2.0.
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Lucide Icons](https://lucide.dev/)
 - [Vercel](https://vercel.com/)
-- [V0](https://v0.dev/)
-
 

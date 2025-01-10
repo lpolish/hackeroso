@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { DragDropContext, Droppable, DropResult } from 'react-beautiful-dnd'
 import TaskList from './TaskList'
 import TaskForm from './TaskForm'
-import { useTaskContext } from '../contexts/TaskContext'
+import { useTaskContext, Task } from '../contexts/TaskContext'
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
-import { PenLine, Plus, Save, FolderOpen } from 'lucide-react'
-import { useToast } from "@/app/components/ui/use-toast"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/app/components/ui/dialog"
+import { PenLine, Plus, Save, FolderOpen, Play, Pause, CheckCircle } from 'lucide-react'
+import { useToast } from "@/components/ui/use-toast"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function TaskManager() {
   const {
@@ -21,6 +21,7 @@ export default function TaskManager() {
     setProjectName,
     clearTasks,
     setTasks,
+    calculateElapsedTime
   } = useTaskContext()
   const [isMobile, setIsMobile] = useState(false)
   const [isEditingProjectName, setIsEditingProjectName] = useState(false)
@@ -284,7 +285,7 @@ export default function TaskManager() {
                       <div {...provided.droppableProps} ref={provided.innerRef}>
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-sm font-medium">Running</h3>
-                          <span className="text-xs text-muted-foreground">{runningTasks.length} task</span>
+                          <span className="text-xs text-muted-foreground">{runningTasks.length} tasks</span>
                         </div>
                         <TaskList tasks={runningTasks} status="running" />
                         {provided.placeholder}
@@ -296,7 +297,7 @@ export default function TaskManager() {
                       <div {...provided.droppableProps} ref={provided.innerRef}>
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-sm font-medium">Completed</h3>
-                          <span className="text-xs text-muted-foreground">{completedTasks.length} task</span>
+                          <span className="text-xs text-muted-foreground">{completedTasks.length} tasks</span>
                         </div>
                         <TaskList tasks={completedTasks} status="completed" />
                         {provided.placeholder}

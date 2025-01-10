@@ -20,3 +20,43 @@ export interface LogoSettings {
   style: 'animated' | 'static'
 }
 
+export interface SavedItem {
+  id: string
+  title: string
+  url: string
+  listId: string | null
+}
+
+export interface Category {
+  id: string
+  name: string
+}
+
+export interface List {
+  id: string
+  name: string
+  color: string
+}
+
+export interface User {
+  id: string
+  created: number
+  karma: number
+  about?: string
+  submitted?: number[]
+}
+
+export interface Item {
+  id: number
+  type: string
+  by: string
+  time: number
+  text?: string
+  parent?: number
+  kids?: number[]
+  url?: string
+  score?: number
+  title?: string
+  descendants?: number
+}
+

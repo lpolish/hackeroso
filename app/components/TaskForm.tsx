@@ -41,7 +41,6 @@ export default function TaskForm() {
       source: 'custom',
       projectId: 'default',
       url: isUrl ? title : undefined,
-      notificationsEnabled: false,
     })
 
     setTitle('')

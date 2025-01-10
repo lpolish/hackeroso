@@ -1,27 +1,41 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Search, Zap, Sparkles, HelpCircle, Tv, Briefcase, Menu, Moon, Sun, Laptop, LogIn, Send, CheckSquare } from 'lucide-react'
+import { Search, Zap, Sparkles, HelpCircle, Tv, Briefcase, Menu, Moon, Sun, Laptop, LogIn, Send, CheckSquare, Bookmark, Github, MoreHorizontal, ChevronDown, Bell, BellOff, Copy, User, Heart } from 'lucide-react'
 import { useTaskContext } from '../contexts/TaskContext'
 import { Button } from "./ui/button"
 import MobileMenu from './MobileMenu'
 import { getThemePreference, setThemePreference, applyTheme, initializeTheme } from '../utils/theme'
 import { Badge } from "./ui/badge"
 import SearchModal from './SearchModal'
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
+import { DonationDialog } from "./DonationDialog"
 
 export default function Header() {
-  const { logoSettings, pendingTasksCount } = useTaskContext()
+  const { logoSettings, pendingTasksCount, notificationsEnabled, setNotificationsEnabled, userName } = useTaskContext()
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
   const [searchQuery, setSearchQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Added state for dropdown
   const pathname = usePathname()
   const router = useRouter()
   const searchButtonRef = useRef<HTMLButtonElement>(null)
+  const [showDonationDialog, setShowDonationDialog] = useState(false)
+
+  const toggleNotifications = useCallback(() => {
+    setNotificationsEnabled(prev => !prev)
+  }, [setNotificationsEnabled])
 
   useEffect(() => {
     initializeTheme()
@@ -70,12 +84,33 @@ export default function Header() {
   const isActive = (path: string) => pathname === path
 
   const navItems = [
-    { href: '/', label: 'top', icon: Zap },
-    { href: '/new', label: 'new', icon: Sparkles },
-    { href: '/ask', label: 'ask', icon: HelpCircle },
-    { href: '/show', label: 'show', icon: Tv },
+    {
+      group: 'News',
+      items: [
+        { href: '/', label: 'top', icon: Zap },
+        { href: '/new', label: 'new', icon: Sparkles },
+        { href: '/ask', label: 'ask', icon: HelpCircle },
+      ]
+    },
+    {
+      group: 'Trends',
+      items: [
+        { href: '/trending', label: 'github', icon: Github },
+        { href: '/show', label: 'show', icon: Tv },
+      ]
+    },
     { href: '/jobs', label: 'jobs', icon: Briefcase },
     { href: '/tasks', label: 'tasks', icon: CheckSquare },
+    { href: '/profile', label: 'profile', icon: User },
+  ];
+
+  const dropdownItems = [
+    {
+      href: '/profile',
+      label: 'Profile',
+      icon: User,
+      description: 'View your profile and manage followers',
+    },
   ]
 
   const renderSearchComponent = () => {
@@ -121,76 +156,128 @@ export default function Header() {
               </Link>
               <div className="absolute -bottom-3 left-0 w-full overflow-hidden h-4 pointer-events-none">
                 <span className="text-[0.42rem] font-medium text-orange-500 transform translate-y-4 transition-transform duration-200 block text-center group-hover:translate-y-0 group-active:translate-y-0">
-                  HACKER NEWS TASKOSO
+                  .... .- -.-. -.-
                 </span>
               </div>
             </div>
 
             <nav className={`hidden md:flex items-center space-x-6 flex-1 justify-center transition-all duration-300 ${isScrolled ? 'text-sm' : ''}`}>
-              {navItems.map((item) => (
-                <Link 
-                  key={item.href}
-                  href={item.href} 
-                  className={`${
-                    isActive(item.href) 
-                      ? 'text-primary' 
-                      : 'text-muted-foreground'
-                  } hover:text-primary flex items-center font-medium whitespace-nowrap`}
-                >
-                  <item.icon className={`mr-1.5 transition-all duration-300 ${isScrolled ? 'w-3 h-3' : 'w-4 h-4'}`} />
-                  {item.label}
-                  {item.label === 'tasks' && pendingTasksCount > 0 && (
-                    <Badge variant="secondary" className="ml-1">
-                      {pendingTasksCount}
-                    </Badge>
-                  )}
-                </Link>
+              {navItems.map((item, index) => (
+                'group' in item ? (
+                  <DropdownMenu key={index}>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center text-muted-foreground hover:text-primary font-medium">
+                        {item.group}
+                        <ChevronDown className={`ml-1 transition-all duration-300 ${isScrolled ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {item.items.map((subItem) => (
+                        <DropdownMenuItem key={subItem.href}>
+                          <Link href={subItem.href} className="flex items-center w-full">
+                            <subItem.icon className="mr-2 h-4 w-4" />
+                            {subItem.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Link 
+                    key={item.href}
+                    href={item.href} 
+                    className={`${
+                      isActive(item.href) 
+                        ? 'text-primary' 
+                        : 'text-muted-foreground'
+                    } hover:text-primary flex items-center font-medium whitespace-nowrap`}
+                  >
+                    <item.icon className={`mr-1.5 transition-all duration-300 ${isScrolled ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                    {item.label === 'profile' ? 'Dashboard' : item.label}
+                    {item.label === 'tasks' && pendingTasksCount > 0 && (
+                      <Badge variant="secondary" className="ml-1">
+                        {pendingTasksCount}
+                      </Badge>
+                    )}
+                  </Link>
+                )
               ))}
             </nav>
 
             <div className="flex items-center gap-4 shrink-0">
               {renderSearchComponent()}
-
-              <a
-                href="https://news.ycombinator.com/login?goto=news"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`hidden md:flex items-center font-medium text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-green-400 transition-all duration-300 ${isScrolled ? 'text-sm' : ''}`}
-              >
-                <LogIn className={`mr-1.5 transition-all duration-300 ${isScrolled ? 'w-3 h-3' : 'w-4 h-4'}`} />
-                Login
-              </a>
-
-              <a
-                href="https://news.ycombinator.com/submit"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`hidden md:flex items-center font-medium text-gray-600 dark:text-gray-400 hover:text-orange-500 dark:hover:text-green-400 transition-all duration-300 ${isScrolled ? 'text-sm' : ''}`}
-              >
-                <Send className={`mr-1.5 transition-all duration-300 ${isScrolled ? 'w-3 h-3' : 'w-4 h-4'}`} />
-                Submit
-              </a>
-
-              <button 
-                onClick={toggleTheme}
-                className={`hidden md:block rounded-full bg-muted transition-all duration-300 ${isScrolled ? 'p-1' : 'p-1.5'}`}
-                aria-label="Toggle theme"
-              >
-                {theme === 'light' ? (
-                  <Sun className={`text-gray-700 transition-all duration-300 ${isScrolled ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                ) : theme === 'dark' ? (
-                  <Moon className={`text-green-400 transition-all duration-300 ${isScrolled ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                ) : (
-                  <Laptop className={`text-gray-700 dark:text-green-400 transition-all duration-300 ${isScrolled ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                )}
-              </button>
+              <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}> {/* Updated DropdownMenu */}
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/tasks" className="flex items-center">
+                      <CheckSquare className="mr-2 h-4 w-4" />
+                      <span>Tasks</span>
+                      {pendingTasksCount > 0 && (
+                        <Badge variant="secondary" className="ml-2">
+                          {pendingTasksCount}
+                        </Badge>
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={toggleTheme}>
+                    {theme === 'light' ? (
+                      <Sun className="mr-2 h-4 w-4" />
+                    ) : theme === 'dark' ? (
+                      <Moon className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Laptop className="mr-2 h-4 w-4" />
+                    )}
+                    <span>Theme: {theme}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={(e) => {
+                    e.preventDefault();
+                    toggleNotifications();
+                  }}>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        {notificationsEnabled ? (
+                          <Bell className="mr-2 h-4 w-4" />
+                        ) : (
+                          <BellOff className="mr-2 h-4 w-4" />
+                        )}
+                        <span>Notifications</span>
+                      </div>
+                      <Switch
+                        checked={notificationsEnabled}
+                        onCheckedChange={toggleNotifications}
+                      />
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={(e) => {
+                    e.preventDefault();
+                    setIsDropdownOpen(false); // Close dropdown after clicking
+                    setShowDonationDialog(true);
+                  }}>
+                    <button className="flex items-center w-full">
+                      <Heart className="mr-2 h-4 w-4 text-green-500" />
+                      Support this project
+                    </button>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <button
-                className="md:hidden p-2 relative z-50 bg-background"
+                className="md:hidden p-2 relative z-50 bg-background hover:bg-accent"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="open menu"
               >
-                <Menu className="w-5 h-5 text-gray-700 dark:text-gray-400" />
+                <Menu className="w-5 h-5 text-foreground" />
                 {pendingTasksCount > 0 && (
                   <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs">
                     {pendingTasksCount}
@@ -213,6 +300,12 @@ export default function Header() {
             theme={theme}
             toggleTheme={toggleTheme}
             pendingTasksCount={pendingTasksCount}
+            notificationsEnabled={notificationsEnabled}
+            setNotificationsEnabled={setNotificationsEnabled}
+            onSupportClick={() => {
+              setMobileMenuOpen(false);
+              setShowDonationDialog(true);
+            }}
           />
         )}
       </header>
@@ -227,6 +320,10 @@ export default function Header() {
           searchButtonRef={searchButtonRef}
         />
       )}
+      <DonationDialog 
+        open={showDonationDialog} 
+        onOpenChange={setShowDonationDialog}
+      />
     </>
   )
 }

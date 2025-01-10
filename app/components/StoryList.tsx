@@ -15,7 +15,7 @@ interface Story {
 
 interface StoryListProps {
   storyType: 'top' | 'new' | 'best' | 'ask' | 'show' | 'job';
-  viewMode: 'grid' | 'list';
+  viewMode: 'grid' | 'list' | 'compact';
 }
 
 export default function StoryList({ storyType, viewMode }: StoryListProps) {
@@ -52,8 +52,10 @@ export default function StoryList({ storyType, viewMode }: StoryListProps) {
     <div 
       className={`
         ${viewMode === 'grid' 
-          ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3' 
-          : 'space-y-4'
+          ? 'grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' 
+          : viewMode === 'list'
+          ? 'space-y-4'
+          : 'space-y-2' // compact view
         }
       `}
     >

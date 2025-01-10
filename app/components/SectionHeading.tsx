@@ -1,9 +1,9 @@
-import { Zap, Sparkles, HelpCircle, Tv, Briefcase } from 'lucide-react'
+import { Zap, Sparkles, HelpCircle, Tv, Briefcase, Github } from 'lucide-react'
 
 type SectionHeadingProps = {
   title: string
   subtitle: string
-  icon: 'top' | 'new' | 'ask' | 'show' | 'jobs'
+  icon: 'top' | 'new' | 'ask' | 'show' | 'jobs' | 'trending'
 }
 
 export default function SectionHeading({ title, subtitle, icon }: SectionHeadingProps) {
@@ -12,7 +12,8 @@ export default function SectionHeading({ title, subtitle, icon }: SectionHeading
     new: Sparkles,
     ask: HelpCircle,
     show: Tv,
-    jobs: Briefcase
+    jobs: Briefcase,
+    trending: Github
   }
 
   const Icon = iconMap[icon]

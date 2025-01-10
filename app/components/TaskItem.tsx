@@ -1,17 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useTaskContext } from '../contexts/TaskContext'
+import { Task } from '../types'
 import { Button } from "./ui/button"
 import { Card } from "./ui/card"
 import { Bell, BellOff, Play, Pause, CheckCircle, Trash2, Timer, HourglassIcon, Flag, GripVertical, ExternalLink, ChevronDown } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Draggable } from 'react-beautiful-dnd'
 import { Input } from "./ui/input"
-import { Badge } from "./ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 import { useToast } from "./ui/use-toast"
-import { Task } from '../types'
 
 interface TaskItemProps {
   task: Task
@@ -39,53 +38,61 @@ export default function TaskItem({ task, index }: TaskItemProps) {
     return `${hours > 0 ? `${hours}:` : ''}${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
   }, [])
 
+  const stopBlinking = useCallback(() => {
+    setIsBlinking(false)
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+    }
+  }, [])
+
   const handleComplete = useCallback(() => {
     const now = new Date().getTime()
-    const startTime = new Date(task.startedAt!).getTime()
+    const startTime = task.startedAt ? new Date(task.startedAt).getTime() : now
     const finalTime = now - startTime + (task.accumulatedTime || 0)
     updateTask({
       id: task.id,
       status: 'completed',
       accumulatedTime: finalTime,
     })
-    setIsBlinking(false)
+    stopBlinking()
     stopTabTitleBlink()
     toast({
       title: "Task Completed",
       description: `Your task "${task.title}" has been completed!`,
       duration: 5000,
     })
-  }, [task.id, task.startedAt, task.accumulatedTime, task.title, updateTask, toast])
+  }, [task.id, task.startedAt, task.accumulatedTime, task.title, updateTask, toast, stopBlinking])
 
   useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (task.status === 'running' && !task.isPaused && task.startedAt) {
+    let interval: NodeJS.Timeout;
+    const initialElapsedTime = task.accumulatedTime ? Math.floor(task.accumulatedTime / 1000) : 0;
+    setElapsedTime(initialElapsedTime);
+
+    if (task.status === 'running' && !task.isPaused) {
+      const startTime = task.startedAt ? new Date(task.startedAt).getTime() : Date.now();
       interval = setInterval(() => {
-        const now = new Date().getTime()
-        const startTime = new Date(task.startedAt!).getTime()
-        const currentTime = now - startTime + (task.accumulatedTime || 0)
-        setElapsedTime(Math.floor(currentTime / 1000))
+        const now = Date.now();
+        const currentTime = now - startTime + initialElapsedTime * 1000;
+        setElapsedTime(Math.floor(currentTime / 1000));
 
         if (currentTime >= task.expectedDuration * 60 * 1000) {
-          clearInterval(interval)
-          setIsBlinking(true)
-          handleComplete()
+          clearInterval(interval);
+          setIsBlinking(true);
+          handleComplete();
           if (task.notificationsEnabled) {
-            sendNotification("Task Completed", `Your task "${task.title}" has been completed!`)
-            startTabTitleBlink(`Task Completed: ${task.title}`)
+            sendNotification("Task Completed", `Your task "${task.title}" has been completed!`);
+            startTabTitleBlink(`Task Completed: ${task.title}`);
           }
         }
-      }, 1000)
-      timerRef.current = interval
-    } else if (task.isPaused || task.status === 'completed') {
-      setElapsedTime(Math.floor(task.accumulatedTime / 1000))
+      }, 1000);
     }
+
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
+      if (interval) {
+        clearInterval(interval);
       }
-    }
-  }, [task, handleComplete, sendNotification])
+    };
+  }, [task, handleComplete, sendNotification]);
 
   useEffect(() => {
     if (isEditingDuration && durationInputRef.current) {
@@ -108,32 +115,41 @@ export default function TaskItem({ task, index }: TaskItemProps) {
   }, [])
 
   const handleStart = useCallback(() => {
+    const now = Date.now();
     updateTask({
       id: task.id,
       status: 'running',
       isPaused: false,
-    })
-    setIsBlinking(false)
-    stopTabTitleBlink()
+      startedAt: new Date(now).toISOString(),
+      accumulatedTime: task.accumulatedTime || 0,
+    });
+    stopBlinking();
+    stopTabTitleBlink();
     toast({
       title: "Task Started",
       description: `Task "${task.title}" has been started.`,
       duration: 3000,
-    })
-  }, [task.id, task.title, updateTask, toast])
+    });
+  }, [task.id, task.title, task.accumulatedTime, updateTask, toast, stopBlinking]);
 
   const handlePause = useCallback(() => {
+    const now = Date.now();
+    const startTime = task.startedAt ? new Date(task.startedAt).getTime() : now;
+    const additionalTime = now - startTime;
+    const totalAccumulatedTime = (task.accumulatedTime || 0) + additionalTime;
+
     updateTask({
       id: task.id,
       status: 'running',
       isPaused: true,
-    })
+      accumulatedTime: totalAccumulatedTime,
+    });
     toast({
       title: "Task Paused",
       description: `Task "${task.title}" has been paused.`,
       duration: 3000,
-    })
-  }, [task.id, task.title, updateTask, toast])
+    });
+  }, [task.id, task.title, task.startedAt, task.accumulatedTime, updateTask, toast]);
 
   const handleNotificationToggle = useCallback(() => {
     if (task.status === 'completed') return
@@ -193,11 +209,11 @@ export default function TaskItem({ task, index }: TaskItemProps) {
 
   const getTimerDisplay = useCallback(() => {
     if (isReverseTimer) {
-      const remainingTime = Math.max(0, task.expectedDuration * 60 - elapsedTime)
-      return formatTime(remainingTime)
+      const remainingTime = Math.max(0, task.expectedDuration * 60 - elapsedTime);
+      return formatTime(remainingTime);
     }
-    return formatTime(elapsedTime)
-  }, [isReverseTimer, task.expectedDuration, elapsedTime, formatTime])
+    return formatTime(elapsedTime);
+  }, [isReverseTimer, task.expectedDuration, elapsedTime, formatTime]);
 
   const handlePriorityChange = useCallback((newPriority: 'low' | 'medium' | 'high') => {
     updateTask({
@@ -217,7 +233,7 @@ export default function TaskItem({ task, index }: TaskItemProps) {
     const interval = setInterval(() => {
       document.title = isOriginal ? originalTitle : message
       isOriginal = !isOriginal
-    }, 1000);
+    }, 1000)
 
     // Store the interval ID on the window object
     (window as any).tabTitleBlinkInterval = interval
@@ -241,7 +257,7 @@ export default function TaskItem({ task, index }: TaskItemProps) {
             <div className="flex flex-col gap-2">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="font-medium">
+                  <h3 className="font-medium text-sm mb-1">
                     {task.url ? (
                       <a
                         href={task.url}
@@ -256,7 +272,7 @@ export default function TaskItem({ task, index }: TaskItemProps) {
                       task.title
                     )}
                   </h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {isEditingDuration ? (
                       <Input
                         ref={durationInputRef}
@@ -265,19 +281,19 @@ export default function TaskItem({ task, index }: TaskItemProps) {
                         onChange={handleDurationChange}
                         onBlur={handleDurationBlur}
                         onKeyDown={handleDurationKeyDown}
-                        className="w-16 h-6 px-1 text-center"
+                        className="w-16 h-6 px-1 text-center text-xs"
                       />
                     ) : (
                       <button
                         onClick={handleDurationClick}
-                        className="hover:text-primary focus:outline-none focus:text-primary"
+                        className="hover:text-primary focus:outline-none focus:text-primary text-xs"
                         disabled={!task.isPaused && task.status === 'running'}
                       >
                         {task.expectedDuration}m
                       </button>
                     )}
                     <span>•</span>
-                    <span>Added {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
+                    <span className="truncate">Added {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
                   </div>
                 </div>
                 <div ref={priorityDropdownRef} className="relative">

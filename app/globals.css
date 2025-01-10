@@ -5,10 +5,11 @@
 @layer base {
   html {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 15px;
   }
   
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-black dark:text-zinc-100 font-mono;
+    @apply bg-gray-50 text-gray-900 dark:bg-black dark:text-zinc-100 font-mono text-[15px];
   }
   :root {
     --background: 0 0% 100%;
@@ -67,7 +68,20 @@
 
 @layer utilities {
   .pt-safe {
-    padding-top: calc(4rem + env(safe-area-inset-top));
+    padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  }
+  .content-container {
+    padding-top: 4rem; /* Adjust this value based on your header height */
+  }
+
+  @media (min-width: 768px) {
+    .content-container {
+      padding-top: 5rem; /* Slightly more padding for larger screens */
+    }
+  }
+  .modal-open {
+    overflow: hidden;
+    padding-right: var(--scrollbar-width, 0px);
   }
 }
 
@@ -80,14 +94,23 @@
   }
 }
 
+/* Ensure proper stacking context */
+#dialog-root,
+#modal-root {
+  isolation: isolate;
+}
 
+/* Remove previous z-index fixes since we're now using portals */
+
+/* Toast notifications should always be on top */
 [role="status"][data-state="open"] {
-  z-index: 9999 !important;
+  z-index: 10000 !important;
 }
 
 .toast-viewport {
   position: fixed !important;
   top: 1rem !important;
   right: 1rem !important;
-  z-index: 9999 !important;
+  z-index: 10000 !important;
 }
+

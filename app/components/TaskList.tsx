@@ -1,6 +1,6 @@
 'use client'
 
-import { Task } from '@/app/types'
+import { Task } from '../types'
 import TaskItem from './TaskItem'
 
 interface TaskListProps {
@@ -9,6 +9,10 @@ interface TaskListProps {
 }
 
 export default function TaskList({ tasks, status }: TaskListProps) {
+  //const { tasks } = useTaskContext()
+
+  //const filteredTasks = tasks.filter(task => task.status === status)
+
   return (
     <div className="space-y-2">
       {tasks.map((task, index) => (
